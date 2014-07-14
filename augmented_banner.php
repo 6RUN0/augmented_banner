@@ -26,7 +26,7 @@ $corpPilotArray = array();
 $mixedArray = array();
 
 
-if ($alliID != 0 && $displayCorps ) {
+if (!empty($alliID) && $displayCorps ) {
     $corpList = new TopCorpKillsList();
     $corpList->addInvolvedAlliance($alliID);
     $corpList->setLimit($maxDisplayed);
@@ -53,8 +53,12 @@ if ($alliID != 0 && $displayCorps ) {
 if ($displayPilots) {
     $list = new TopKillsList();
     $list->setLimit($maxDisplayed);
-    if ($alliID != 0 ) $list->addInvolvedAlliance($alliID);
-    else $list->addInvolvedCorp($corpID);
+    if (!empty($alliID)) {
+      $list->addInvolvedAlliance($alliID);
+    }
+    else {
+      $list->addInvolvedCorp($corpID);
+    }
     $list->setPodsNoobShips(config::get('podnoobs'));
     $list->setStartDate(date('Y-m-d H:i',strtotime("- $numDays days")));
     $list->generate();
