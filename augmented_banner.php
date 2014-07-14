@@ -103,4 +103,3 @@ if ($displayType == 'mixed' ) {
 $finalHtml .= "</tr></table>\n";
 
 $html = $finalHtml;
-?>

@@ -93,27 +93,17 @@ $html .= "
 
 $html .= "</table></form>";
 
-$html .= "
-
-<br/><br/><hr><br/><br/>
-
-If you have enabled this mod and don't see corps or pilots beneath your banner, then<br/>
-you have probably not added this line to your active template's index.tpl file:<br/>
-<br/>" .
-'{$augmented_banner}<br/>' . "
-<br/>
-Look for the first table with the class navigation and add that line prior to the table line.<br/>
-<br/>
-<hr/>
-<br/>
-<i>-- Squizz Caphinator</i><br/>
-<a href='http://eve-id.net/forum/viewtopic.php?f=505&t=17311'>EVE ID Forum Posting</a>
-";
+$html .= "<br /><hr /><br />
+If you have enabled this mod and don't see corps or pilots beneath your banner, then<br />
+you have probably not added this line to your active template's index.tpl file:<br /><br />
+<code>{if isset(\$augmented_banner)}{\$augmented_banner}{/if}</code><br /><br />
+Look for the first table with the class navigation and add that line prior to the table line.<br />
+<br /><hr /><br />
+<i>-- Squizz Caphinator</i><br />
+<a href='http://eve-id.net/forum/viewtopic.php?f=505&t=17311'>EVE ID Forum Posting</a>";
 
 $page = new Page( "Augmented Banner" );
 $page->setAdmin();
 $page->setContent($html);
 $page->addContext( $menubox->generate() );
 $page->generate();
-
-?>
