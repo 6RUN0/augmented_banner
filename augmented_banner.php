@@ -22,11 +22,12 @@ $displayType = config::get('augmented_banner_displayType');
 
 $alliID = config::get('cfg_allianceid');
 $corpID = config::get('cfg_corpid');
+$pilotID = config::get('cfg_pilotid');
 $corpPilotArray = array();
 $mixedArray = array();
 
 
-if (!empty($alliID) && $displayCorps ) {
+if (!empty($alliID) && $displayCorps) {
     $corpList = new TopCorpKillsList();
     $corpList->addInvolvedAlliance($alliID);
     $corpList->setLimit($maxDisplayed);
@@ -56,8 +57,11 @@ if ($displayPilots) {
     if (!empty($alliID)) {
       $list->addInvolvedAlliance($alliID);
     }
-    else {
+    if (!empty($corpID)) {
       $list->addInvolvedCorp($corpID);
+    }
+    if (!empty($pilotID)) {
+      $list->addInvolvedPilot($pilotID);
     }
     $list->setPodsNoobShips(config::get('podnoobs'));
     $list->setStartDate(date('Y-m-d H:i',strtotime("- $numDays days")));
