@@ -1,0 +1,18 @@
+.augmented-banner-wrap:after {
+  content: ".";
+  display: block;
+  height: 0;
+  clear: both;
+  visibility: hidden;
+}
+
+.augmented-banner-item {
+  float: left;
+  margin: 0 1px 1px 0;
+}
+
+.augmented-banner-img {
+  display: block;
+  height: 32px;
+  width: 32px;
+}

@@ -12,7 +12,8 @@ event::register("page_assembleheader", "augmented_banner::add");
 class augmented_banner {
   function add($home){
     global $smarty;
-        include_once('mods/augmented_banner/augmented_banner.php');
+    include_once('mods/augmented_banner/augmented_banner.php');
     $smarty->assign("augmented_banner", $html);
+    $home->addHeader("\t<link rel=\"stylesheet\" type=\"text/css\" href=\"mods/augmented_banner/augmented_banner.css\" />");
   }
 }

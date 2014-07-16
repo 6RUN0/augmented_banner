@@ -1,11 +1,16 @@
 <?php
 
-require_once('common/includes/class.toplist.php');
-
 $config = new Config(KB_SITE);
 
 function setDefaultConfig($key, $value) {
-    if (config::get($key) == null ) config::set($key, $value);
+  if (config::get($key) == NULL) config::set($key, $value);
+}
+
+function banner_sort_callback($a, $b) {
+  if ($a['cnt'] == $b['cnt']) {
+    return 0;
+  }
+  return ($a['cnt'] > $b['cnt']) ? -1 : 1;
 }
 
 setDefaultConfig('augmented_banner_numDays', 7);
@@ -19,95 +24,67 @@ $maxDisplayed = (int) config::get('augmented_banner_maxDisplayed');
 $displayCorps = 'true' == config::get('augmented_banner_displayCorps');
 $displayPilots = 'true' == config::get('augmented_banner_displayPilots');
 $displayType = config::get('augmented_banner_displayType');
-
 $alliID = config::get('cfg_allianceid');
 $corpID = config::get('cfg_corpid');
 $pilotID = config::get('cfg_pilotid');
-$corpPilotArray = array();
-$mixedArray = array();
+$podNoobs = config::get('podnoobs');
 
+$items = array();
 
 if (!empty($alliID) && $displayCorps) {
-    $corpList = new TopCorpKillsList();
-    $corpList->addInvolvedAlliance($alliID);
-    $corpList->setLimit($maxDisplayed);
-    $corpList->setPodsNoobShips(config::get('podnoobs'));
-    $corpList->setStartDate(date('Y-m-d H:i',strtotime("- $numDays days")));
-    $corpList->generate();
-
-    while ($row = $corpList->getRow() ) {
-        if ($numListed >= $maxDisplayed) continue;
-        $id=$row['crp_id'];
-        $corp = new Corporation($row['crp_id']);
-        $url=$corp->getPortraitURL(32);
-        $name=$corp->getName();
-        $count=$row['cnt'];
-        $html = "
-            <td><a href='?a=corp_detail&crp_id=$id'>
-            <img style='border: none;' src='$url' title=\"$name - $count kills over the last $numDays days\" width='32' height='32'/>
-            </a></td>\n";
-        $mixedArray[$html] = $count;
-        $corpPilotArray[] = $html;
-    }
+  $corpList = new TopCorpKillsList();
+  $corpList->addInvolvedAlliance($alliID);
+  $corpList->setLimit($maxDisplayed);
+  $corpList->setPodsNoobShips($podNoobs);
+  $corpList->setStartDate(date('Y-m-d H:i',strtotime("- $numDays days")));
+  $corpList->generate();
+  while ($row = $corpList->getRow()) {
+    $corp = new Corporation($row['crp_id']);
+    $items[] = array(
+      'cnt' => $row['cnt'],
+      'obj' => $corp,
+    );
+  }
 }
 
 if ($displayPilots) {
-    $list = new TopKillsList();
-    $list->setLimit($maxDisplayed);
-    if (!empty($alliID)) {
-      $list->addInvolvedAlliance($alliID);
-    }
-    if (!empty($corpID)) {
-      $list->addInvolvedCorp($corpID);
-    }
-    if (!empty($pilotID)) {
-      $list->addInvolvedPilot($pilotID);
-    }
-    $list->setPodsNoobShips(config::get('podnoobs'));
-    $list->setStartDate(date('Y-m-d H:i',strtotime("- $numDays days")));
-    $list->generate();
-    while ($row = $list->getRow() ) {
-        if ($numListed >= $maxDisplayed) continue;
-        $id=$row['plt_id'];
-        $pilot = new Pilot($row['plt_id']);
-        $url=$pilot->getPortraitURL(32);
-        $name=$pilot->getName();
-        $count=$row['cnt'];
-        $html = "
-            <td><a href='?a=pilot_detail&plt_id=$id'>
-            <img style='border: none; padding-right: 1px;' src='$url' title=\"$name - $count kills over the last $numDays days\" width='32' height='32'/>
-            </a></td>\n";
-        $mixedArray[$html] = $count;
-        $corpPilotArray[] = $html;
-    }
+  $list = new TopKillsList();
+  $list->setLimit($maxDisplayed);
+  if (!empty($alliID)) {
+    $list->addInvolvedAlliance($alliID);
+  }
+  if (!empty($corpID)) {
+    $list->addInvolvedCorp($corpID);
+  }
+  if (!empty($pilotID)) {
+    $list->addInvolvedPilot($pilotID);
+  }
+  $list->setPodsNoobShips($podNoobs);
+  $list->setStartDate(date('Y-m-d H:i',strtotime("- $numDays days")));
+  $list->generate();
+  while ($row = $list->getRow() ) {
+    $pilot = new Pilot($row['plt_id']);
+    $items[] = array(
+      'cnt' => $row['cnt'],
+      'obj' => $pilot,
+    );
+  }
 }
 
-function banner_sort($a, $b) {
-    if ($a == $b) {
-        return 0;
-    }
-    return ($a > $b) ? -1 : 1;
-    return ($a < $b) ? -1 : 1;
+if ($displayType == 'mixed') {
+  uasort($items, "banner_sort_callback");
 }
 
+$html = '';
 $numListed = 0;
-$finalHtml = "<table class='kb-table'><tr>\n";
-if ($displayType == 'mixed' ) {
-    uasort($mixedArray, "banner_sort");
-    foreach ($mixedArray as $html=>$count) {
-        if ($numListed < $maxDisplayed) {
-            $finalHtml .= $html;
-            $numListed++;
-        }
-    }
-} else {
-    foreach ($corpPilotArray as $html) {
-        if ($numListed < $maxDisplayed) {
-            $finalHtml .= $html;
-            $numListed++;
-        }
-    }
+foreach ($items as $item) {
+  $src = $item['obj']->getPortraitURL(32);
+  $href = $item['obj']->getDetailsURL();
+  $name = $item['obj']->getName();
+  $count = $item['cnt'];
+  $alt = "$name - $count kills over the last $numDays days";
+  $html .= "<div class=\"augmented-banner-item\"><a href=\"${href}\"><img class=\"augmented-banner-img\" src=\"${src}\" alt=\"${alt}\" title=\"${alt}\" /></a></div>";
+  if (++$numListed >= $maxDisplayed) break;
 }
-$finalHtml .= "</tr></table>\n";
 
-$html = $finalHtml;
+$html = "<div class=\"augmented-banner-wrap\">${html}</div>";
