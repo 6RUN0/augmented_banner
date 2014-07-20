@@ -14,5 +14,6 @@
 .augmented-banner-img {
   display: block;
   height: 32px;
+  overflow: hidden;
   width: 32px;
 }
