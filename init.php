@@ -14,6 +14,6 @@ class augmented_banner {
     global $smarty;
     include_once('mods/augmented_banner/augmented_banner.php');
     $smarty->assign("augmented_banner", $html);
-    $home->addHeader("\t<link rel=\"stylesheet\" type=\"text/css\" href=\"mods/augmented_banner/augmented_banner.css\" />");
+    $home->addHeader('<link rel="stylesheet" type="text/css" href="' . config::get('cfg_kbhost') . '/mods/augmented_banner/augmented_banner.css" />');
   }
 }
