@@ -1,90 +1,163 @@
 <?php
 
-require_once('common/admin/admin_menu.php');
+/**
+ * $Id$
+ *
+ * @category Classes
+ * @package  Augmented_Banner
+ * @author   Squizz Caphinator, boris_t <boris@talovikov.ru>
+ * @license  http://opensource.org/licenses/MIT MIT
+ */
 
-function ab_setConfiguration($post, $key) {
-  config::set($key, $post[$key]);
+class pAugmentedBannerSettings extends pageAssembly
+{
+
+    public $page;
+    private $_opt = array();
+    private $_err = array();
+
+    /**
+     * Constructor methods for this classes.
+     */
+    function __construct()
+    {
+        parent::__construct();
+        $this->queue('update');
+        $this->queue('start');
+        $this->queue('form');
+    }
+
+    /**
+     * Conver old options.
+     *
+     * @return none
+     */
+    function update()
+    {
+        $this->_opt = config::get('augmented_banner_options');
+        if (empty($this->_opt)) {
+            $this->_opt = array(
+                'num_days' => $this->_move('augmented_banner_numDays', 7),
+                'max_displayed' => $this->_move('augmented_banner_maxDisplayed', 27),
+                'display_corps' => $this->_move('augmented_banner_displayCorps', 'true'),
+                'display_pilots' => $this->_move('augmented_banner_displayPilots', 'true'),
+                'display_type' => $this->_move('augmented_banner_displayType', 'mixed'),
+            );
+        }
+    }
+
+    /**
+     * Preparation of the form.
+     *
+     * @return none
+     */
+    function start()
+    {
+        $this->page = new Page();
+        $this->page->setTitle('Settings - Augmented Banner');
+        $this->page->addHeader('<link rel="stylesheet" type="text/css" href="' . KB_HOST . '/mods/augmented_banner/css/settings.css" />');
+
+        if (isset($_POST['submit'])) {
+            $this->_opt = $_POST['options'];
+            $this->_err['text'] = '';
+            $this->_opt['num_days'] = $this->_is_natural($this->_opt['num_days']);
+            if (!$this->_opt['num_days']) {
+                $this->_opt['num_days'] = '';
+                $this->_err['text'] .= 'Error. Number of days it is natural number<br/>';
+                $this->_err['num_days'] = 'augmented-banner-err';
+            }
+            $this->_opt['max_displayed'] = $this->_is_natural($this->_opt['max_displayed']);
+            if (!$this->_opt['max_displayed']) {
+                $this->_opt['max_displayed'] = '';
+                $this->_err['text'] .= 'Error. Number of images it is natural nubber<br/>';
+                $this->_err['max_displayed'] = 'augmented-banner-err';
+            }
+            config::set('augmented_banner_options', $this->_opt);
+        }
+    }
+
+    /**
+     * Render of the form.
+     *
+     * @return string html
+     */
+    function form()
+    {
+        global $smarty;
+        $smarty->assign('augmented_banner_options', $this->_opt);
+        $alliance = config::get('cfg_allianceid');
+        if (!empty($alliance)) {
+            $smarty->assign('augmented_banner_showcorp', true);
+        }
+        $smarty->assign('augmented_banner_err', $this->_err);
+        return $smarty->fetch(get_tpl('./mods/augmented_banner/settings'));
+    }
+
+    /**
+     * Build context.
+     *
+     * @return none
+     */
+    function context()
+    {
+        parent::__construct();
+        $this->queue('menu');
+    }
+
+    /**
+     * Render of admin menu.
+     *
+     * @return string html
+     */
+    function menu()
+    {
+        include 'common/admin/admin_menu.php';
+        return $menubox->generate();
+    }
+
+    /**
+     * Delete old key and return the value of key.
+     *
+     * @param string $opt     option name
+     * @param mixed  $default default value
+     *
+     * @return mixed value of option or default value
+     */
+    private function _move($opt, $default = null)
+    {
+        $val = config::get($opt);
+        if (isset($val)) {
+            config::del($opt);
+            return $val;
+        }
+        return $default;
+    }
+
+    /**
+     * Finds whether the type of the given variable is natural number.
+     *
+     * @param string|int $num - number
+     *
+     * @return unsigned integer|false natular number or false
+     */
+    private function _is_natural($num) {
+        $num = intval($num);
+        if (is_int($num) && $num > 0) {
+            return $num;
+        }
+        return false;
+    }
+
 }
 
-function setDefaultConfig_ab2($key, $value) {
-  if (config::get($key) == null || config::get($key) == "" ) config::set($key, $value);
-}
+$pageAssembly = new pAugmentedBannerSettings();
+event::call('pAugmentedBannerSettings_assembling', $pageAssembly);
+$html = $pageAssembly->assemble();
+$pageAssembly->page->setContent($html);
 
-if ($_POST) {
-  ab_setConfiguration($_POST, 'augmented_banner_numDays');
-  ab_setConfiguration($_POST, 'augmented_banner_maxDisplayed');
-  ab_setConfiguration($_POST, 'augmented_banner_displayCorps');
-  ab_setConfiguration($_POST, 'augmented_banner_displayPilots');
-  ab_setConfiguration($_POST, 'augmented_banner_displayType');
-}
+$pageAssembly->context();
+event::call('pAugmentedBannerSettings_context_assembling', $pageAssembly);
+$context = $pageAssembly->assemble();
+$pageAssembly->page->addContext($context);
 
-setDefaultConfig_ab2('augmented_banner_numDays', 7);
-setDefaultConfig_ab2('augmented_banner_maxDisplayed', 27);
-setDefaultConfig_ab2('augmented_banner_displayCorps', 'true');
-setDefaultConfig_ab2('augmented_banner_displayPilots', 'true');
-setDefaultConfig_ab2('augmented_banner_displayType', 'mixed');
-
-$numDays = config::get('augmented_banner_numDays');
-$maxDisplayed = config::get('augmented_banner_maxDisplayed');
-$displayCorps = config::get('augmented_banner_displayCorps');
-$displayPilots = config::get('augmented_banner_displayPilots');
-$displayType = config::get('augmented_banner_displayType');
-$alliID = (int) config::get('cfg_allianceid');
-
-$html = '<div class="block-header2">Settings</div>';
-$html .= '<form method="post">';
-$html .= '<div><label for name="augmented_banner_numDays">Number of Days to Count:</label><input size="3" name="augmented_banner_numDays" type="text" value="' . $numDays . '" /></div>';
-$html .= '<div><label for name="augmented_banner_maxDisplayed">Maximum Images to Display:</label><input size="3" name="augmented_banner_maxDisplayed" type="text" value="' . $maxDisplayed . '" /></div>';
-
-if ($alliID != 0 ) {
-  $selected1 = $displayCorps == 'true' ? ' selected="selected"' : '';
-  $selected2 = $displayCorps == 'false' ? ' selected="selected"' : '';
-  $html .= '
-    <div>
-    <label for name="augmented_banner_displayCorps">Display Corps?</label>
-      <select name="augmented_banner_displayCorps">
-        <option' . $selected1 . ' value="true" >Yes</option>
-        <option' . $selected2 . ' value="false" >No</option>
-      </select>
-    </div>';
-}
-
-$selected1 = $displayPilots == 'true' ? ' selected="selected"' : '';
-$selected2 = $displayPilots == 'false' ? ' selected="selected"' : '';
-$html .= '
-  <div>
-    <label for name="augmented_banner_displayPilots">Display Pilots:</label>
-    <select name="augmented_banner_displayPilots">
-      <option value="true"' . $selected1 . ' >Yes</option>
-      <option value="false"' . $selected2 . ' >No</option>
-    </select>
-  </div>';
-
-$selected1 = $displayType == 'mixed' ? ' selected="selected"' : '';
-$selected2 = $displayType == 'straight' ? ' selected="selected"' : '';
-$html .= '
-  <div>
-    <label for name="augmented_banner_displayType">Display Type:</label>
-    <select name="augmented_banner_displayType">
-      <option' . $selected1 . ' value="mixed" >Mixed Corps/Pilots</option>
-      <option' . $selected2 . ' value="straight" >Corps then Pilots</option>
-    </select>
-  </div>';
-
-$html .= '<div><input type="Submit" value="Save" /></div></form>';
-
-$html .= '<div class="block-header2">Patch template</div>';
-
-$html .= "If you have enabled this mod and don't see corps or pilots beneath your banner, then<br />
-you have probably not added this line to your active template's <strong>index.tpl</strong> file:<br /><br />
-<code>{if isset(\$augmented_banner)}{\$augmented_banner}{/if}</code><br /><br />
-Look for the first table with the class navigation and add that line prior to the table line.<br />";
-
-$html .= '<div class="block-header2">About</div><i>-- Squizz Caphinator</i><br />
-<a href="http://eve-id.net/forum/viewtopic.php?&t=17311">EVE ID Forum Posting</a>';
-
-$page = new Page('Augmented Banner');
-$page->setAdmin();
-$page->setContent($html);
-$page->addContext($menubox->generate());
-$page->generate();
+$pageAssembly->page->generate();
